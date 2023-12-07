@@ -1,0 +1,14 @@
+50 98 2
+means:
+destination range starts of 50
+source range start of 98
+the range is 2
+so:
+50 51
+98 99
+
+it means that - examples:
+98 -> 50
+99 -> 51
+1 -> 1
+69 -> 69
