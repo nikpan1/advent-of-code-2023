@@ -5,31 +5,27 @@
 class Node {
 private:
   std::string L_label, R_label;
+  int connection[2];
+  
 public:
-  Node* connection[2];
   std::string label;
 
   Node(std::string line) {
     label = line.substr(0, 3);
     L_label = line.substr(7, 3);
     R_label = line.substr(12, 3);
-    connection[0] = nullptr;
-    connection[1] = nullptr;
+    connection[0] = 0;
+    connection[1] = 0;
   }
   
   void Connect(std::vector<Node>& nodes) {
-    for(auto& node : nodes) {
-      if(node.label == R_label) connection[1] = &node;
-      if(node.label == L_label) connection[0] = &node;
+    for(int i = 0; i < nodes.size(); i ++) {
+      if(nodes[i].label == R_label) connection[1] = i;
+      if(nodes[i].label == L_label) connection[0] = i;
     }
   }
 
-  Node* turn(char c) {
-  if(c == 'R') return connection[1];
-  if(c == 'L') return connection[0];
-  return nullptr;
-  }
-
+  int turn(char c) { return connection[c == 'R']; }
 };
 
 
@@ -54,14 +50,10 @@ int main(int argc, char** argv) {
   while(std::getline(input, line)) nodes.push_back(Node(line));   
   
   for(auto& n: nodes) n.Connect(nodes);
-
-  Node* currentNode = &nodes[0];   // we could also hold the index of the std::vector instead of
-  int steps = 0, pivot = 0;
-  while(currentNode->label != "ZZZ") {
-    currentNode = currentNode->turn(moveset[pivot]);
-    if(pivot == moveset.size() - 1) pivot = 0;
-    else pivot ++;
-    steps ++;
+  std::cout << "|"<<moveset<<"|\n";
+  int currNode = 0, steps = 0;
+  while(nodes[currNode].label != "ZZZ") {
+    currNode = nodes[currNode].turn(moveset[steps++%moveset.size()]);
   }
   
   std::cout << "result = " << steps;
