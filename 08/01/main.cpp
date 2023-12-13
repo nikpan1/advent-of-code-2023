@@ -1,10 +1,6 @@
 #include <iostream>
 #include <fstream>
 #include <vector> 
-#include <unordered_map>
-
-std::unordered_map<char, int> map = {{'L', 0}, {'R', 1}};
-
 
 class Node {
 private:
@@ -12,25 +8,30 @@ private:
 public:
   Node* connection[2];
   std::string label;
+
   Node(std::string line) {
     label = line.substr(0, 3);
     L_label = line.substr(7, 3);
     R_label = line.substr(12, 3);
-    std::cout <<"";
+    connection[0] = nullptr;
+    connection[1] = nullptr;
   }
   
   void Connect(std::vector<Node>& nodes) {
     for(auto& node : nodes) {
-      if(node.label == this->R_label) connection[1] = &node;
-      else if(node.label == this->L_label) connection[0] = &node;
+      if(node.label == R_label) connection[1] = &node;
+      if(node.label == L_label) connection[0] = &node;
     }
   }
-  
-  friend std::ostream& operator<<(std::ostream& os, const Node& obj) {
-    os << obj.label << " = (" << obj.L_label << ", " << obj.R_label << ")[" << (obj.connection[0] != nullptr && obj.connection[1] != nullptr) <<"]\n"; 
-    return os;
+
+  Node* turn(char c) {
+  if(c == 'R') return connection[1];
+  if(c == 'L') return connection[0];
+  return nullptr;
   }
+
 };
+
 
 int main(int argc, char** argv) {
   if(argc != 2) {
@@ -47,19 +48,23 @@ int main(int argc, char** argv) {
   
   std::string line, moveset;
   std::getline(input, moveset);
-  std::vector<Node> nodes;
-  
+  std::vector<Node> nodes; 
   std::getline(input, line); // empty line
+  
+  while(std::getline(input, line)) nodes.push_back(Node(line));   
+  
+  for(auto& n: nodes) n.Connect(nodes);
 
-  while(std::getline(input, line)) {
-    nodes.push_back(Node(line));   
+  Node* currentNode = &nodes[0];   // we could also hold the index of the std::vector instead of
+  int steps = 0, pivot = 0;
+  while(currentNode->label != "ZZZ") {
+    currentNode = currentNode->turn(moveset[pivot]);
+    if(pivot == moveset.size() - 1) pivot = 0;
+    else pivot ++;
+    steps ++;
   }
   
-  for(auto n: nodes) n.Connect(nodes);
-  for(auto n: nodes) std::cout << n;
-
-  
-
-
+  std::cout << "result = " << steps;
   return 1;
 }
+
