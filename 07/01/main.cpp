@@ -20,14 +20,6 @@ int gv(char c) {  // get value from keymap
 }
 
 
-bool isSecondPair(std::vector<int> values, std::vector<int>::iterator it) {
-  it ++;
-  for(auto val = it; val != values.end(); val ++ ) if(*val == 2 && val != it) return true;
-  
-  return false; 
-}
-
-
 int getHandType(std::pair<std::string, int> hand) {
   std::unordered_map<char, int> counter;   // does anyone like std::map? me? no.
   for(char c : hand.first) counter[c] ++ ;
@@ -35,8 +27,6 @@ int getHandType(std::pair<std::string, int> hand) {
   std::vector<int> values;
   for(auto ct : counter) values.push_back(ct.second);
   std::sort(values.begin(), values.end(), std::greater<int>());
-  for(auto v : values) std::cout << "v=" << v << "\n";
-  std::cout << " _ \n";
   
   for(auto c = values.begin(); c != values.end(); c ++) {
     switch(*c) {
