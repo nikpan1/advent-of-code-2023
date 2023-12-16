@@ -1,9 +1,9 @@
+#include <cstdint>
 #include <iostream>
 #include <fstream>
 #include <vector> 
 
-// r - 1
-// l - 0
+// R - 1    |    L - 0
 
 class Node {
 private:
@@ -22,7 +22,7 @@ public:
     connection[1] = 0;
   }
   
-  void Connect(std::vector<Node>& nodes) {
+  void connect(std::vector<Node>& nodes) {
     for(int i = 0; i < nodes.size(); i ++) {
       if(nodes[i].label == R_label) connection[1] = i;
       if(nodes[i].label == L_label) connection[0] = i;
@@ -32,8 +32,8 @@ public:
   int turn(char c) { return connection[c == 'R']; }
 };
 
-bool isStartNode(Node node) {  return node.label[2] == 'A'; }
-bool isEndNode(Node node) { return node.label[2] == 'Z'; }
+bool isStartNode(const Node& node) {  return node.label[2] == 'A'; }
+bool isEndNode(const Node& node) { return node.label[2] == 'Z'; }
 
 
 std::vector<int> getAllStartNodes(const std::vector<Node>& nodes) {
@@ -43,42 +43,50 @@ std::vector<int> getAllStartNodes(const std::vector<Node>& nodes) {
 }
 
 
-bool areAllEndNodes(const std::vector<Node>& nodes, const std::vector<int>& currNodes) {
-  for(const auto& i : currNodes) if(!isEndNode(nodes[i])) return false;
-  return true;
+int64_t NWD(int64_t a, int64_t b) {
+  int64_t p(0);
+  while(b!=0) {
+    p = b;
+    b = a%b;
+    a = p;
+  }
+  return a;
+}
+
+
+int64_t NWW(int64_t a, int64_t b) { return a*b/NWD(a,b); }
+
+int64_t NWW(std::vector<int> values) {
+  int64_t result = values[0];
+  for(auto v : values) result = NWW(v, result);
+  return result;
 }
 
 
 int main(int argc, char** argv) {
-  if(argc != 2) {
-    std::cerr << "Wrong amount of arguments.\n";
-    return -1;
-  }
-
-  std::ifstream input;
-  input.open(argv[1]);
-  if(!input.is_open()) {
-    std::cerr << "File not opened.\n";
-    return -1;
-  }
+  if(argc != 2) std::cerr << "Wrong amount of arguments.\n"; 
+  std::ifstream input(argv[1]);
+  if(!input.is_open()) std::cerr << "File not opened.\n"; 
   
   std::string line, moveset;
-  std::getline(input, moveset);
-  std::vector<Node> nodes; 
+  std::getline(input, moveset); 
   std::getline(input, line); // empty line
-  
-  while(std::getline(input, line)) nodes.push_back(Node(line));   
-  for(auto& n: nodes) n.Connect(nodes);
-  std::vector<int> currNodes = getAllStartNodes(nodes); 
 
-for( auto& n : currNodes) {
-  int steps = 0, size = moveset.size();
-  while(nodes[n].label[2] != 'Z') {
-    n = nodes[n].turn(moveset[steps%size]);
-    steps++;
+
+  std::vector<Node> nodes; 
+  while(std::getline(input, line)) nodes.push_back(Node(line));   
+  for(auto& n: nodes) n.connect(nodes);
+  
+
+  std::vector<int> results, currNodes = getAllStartNodes(nodes); 
+  int size = moveset.size();
+  for(auto& n : currNodes) {
+    int steps = 0;
+    while(!isEndNode(nodes[n])) n = nodes[n].turn(moveset[steps++%size]);
+    results.push_back(steps);
   }
-  std::cout << "result = " << steps << "\n";
-}
+
+  std::cout << "NWW = " << NWW(results);
   return 1;
 }
 
