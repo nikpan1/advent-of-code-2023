@@ -1,0 +1,41 @@
+jesteśmy w jakimś miejscu x
+
+jeżeli wcześniejsza wartość była r i odległość była dodatnia to znaczy, 
+że przedziały na siebie nachodzą
+
+jeżeli kolejna wartość będzie ujemna i będzie r to znaczy,
+że przedziały na siebie nachodzą
+
+jeżeli poprzednia wartość była dodatnia, a obecna jest 0
+to nadpisz
+
+jeżeli następna wartość jest 0, to sprawdź czy jest jakaś kolejna różna od 0
+
+
+
+    if(val->first == 's' && (val-1)->second.length > dist(*val, *(val-1))) val->second.destination = (val - 1)->second.destination + dist(*val, *(val-1));
+
+    // if previous value was lval 
+    if((val-1)->second.length > 0) {
+      std::cout << "a\n";
+      newVal = (val-1)->second.destination + dist(*val, *(val-1));
+      val->second.destination = newVal;
+    }
+    else if((val+1)->second.length < 0) { // it means on the right we have a rvalue 
+      std::cout << "b\n";
+      newVal = findDestVal(*(val+1), *val);
+
+    }
+
+    if(val->second.destination != 0) {
+      newVal = val->second.destination; 
+      std::cout<< "c\n";
+    }
+    
+    if(val->second.length < 0 && val->first == (val+1)->first && (val+1)->second.length > 0) { 
+      std::cout << "d\n";
+      continue; // skip this range 
+    }
+
+    // if next len is negative, and prev pos -> skip
+ 

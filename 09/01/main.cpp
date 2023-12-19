@@ -32,7 +32,7 @@ std::vector<int> getDistances(const std::vector<int>& his) {
 
 
 bool areDistancesEqual(const std::vector<int>& dists) {
-  return dists[dists.size() - 1] == 0 && dists[dists.size() - 1] == 0;
+  return (dists.size() == 1) || (dists[dists.size() - 1] == 0 && dists[dists.size() - 1] == 0);
 }
 
 
@@ -52,7 +52,7 @@ int getNextValue(const std::vector<int>& history) {
   
   while(!areDistancesEqual(dists)) {
     dists = getDistances(dists);
-    lastValues.push_back(dists[dists.size() - 1]);
+    lastValues.push_back(dists.size() == 2 ? dists[0] : dists[dists.size() - 1]);
   }
   
   for(auto d : lastValues) std::cout << d << " "; std::cout << "\n";

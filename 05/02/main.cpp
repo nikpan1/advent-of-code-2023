@@ -31,7 +31,7 @@ std::vector<range> getSeedRanges(std::string& line) {
   auto values = split(line.substr(7, line.size() - 1), ' ');
   
   for(auto val = values.begin(); val < values.end(); val += 2) 
-    result.push_back({*val, *val + *(val + 1) - 1});
+    result.push_back({*val, *(val+1), 0});
 
   return result;
 }
@@ -39,7 +39,6 @@ std::vector<range> getSeedRanges(std::string& line) {
 
 std::vector<range> getAlmanacRanges(std::ifstream& input, std::string& line) {
   std::vector<range> result;
-
   do {
     auto v = split(line, ' ');
     result.push_back({v[1], v[2], v[0]});  
@@ -48,64 +47,81 @@ std::vector<range> getAlmanacRanges(std::ifstream& input, std::string& line) {
   return result;
 }
 
-void compareRanges(std::vector<range>& seeds, std::vector<range>& rg) {
-  std::vector<std::pair<char, range>> values;
-  auto addValues = [&values](std::vector<range> v, char id) { for(auto r : v) {
-      values.push_back(std::make_pair(id, r));
-      values.push_back(std::make_pair(id, range{r.first + r.length - 1, -1 * r.length, r.destination}));
-    }};
 
-  addValues(seeds, 's');
-  addValues(rg, 'r');
+int dist(range r1, range r2) { return abs(r2.first - r1.first); }
+bool isLeftSited(range val) { return val.length > 0; }
+bool isSeedValue(range r1) { return r1.destination == 0; }
 
-  std::sort(values.begin(), values.end(), 
-    [](const auto& a, const auto& b) { return a.second.first < b.second.first; } );
 
-  std::vector<range> newSeeds; // we could optimise it 
-  
-  // get the first and last occurance of 's' --> it will be the range we want
-  auto start = values.begin(), end = values.end();
-  for(auto val = values.begin(); val != values.end(); val ++) { 
-    if(val->first == 's') {
-      start = val;
-      break;
-    }
-  }
-  for(auto val = values.end(); val != values.begin(); val --) { 
-    if(val->first == 's') {
-      end = val;
-      break;
-    }
-  }
- 
-  for(auto val = start; val != end; val ++) {
-    int destinationVal = 0;
+void annihilateLValues(std::vector<range>::iterator main, std::vector<range>& rest) {
+  for(auto it = main; it < rest.end(); it ++) {
+    if(dist(*main, *it) > abs(main->length)) break;
     
-    if(val->second.destination != 0) {
-      if(val->second.destination > 0) // it means it's the lvalue
-        destinationVal = val->second.destination;
-      else // it means it's a value we don't need 
-        break;
+    if(isSeedValue(*it)) {
+      it->destination = main->destination + (it->first - main->first); 
+      it->length = dist(*it, *main);
     }
-    else {  
-      if((val+1)->second.destination == 0) destinationVal = 0;  // the next value is also 's'
-      else if((val+1)->second.destination < 0) destinationVal = (val+1)->second.destination; // the next value is a rvalue
-      else if((val+1)->second.destination > 0) destinationVal = 0;
-    }
-  //
-  // //  HOW DO WE KNOW THE NEW VALUE 
-  //
-    int firstVal = (destinationVal == 0) ? val->second.first : val->second.first - ; 
-    newSeeds.push_back({firstVal,  });
-  } 
+  }
 
+  rest.erase(main);
 }
 
 
-void translateRanges(std::vector<range>& seeds, std::vector<range> rangeMap) { 
-  for(range rg : rangeMap) {
+void annihilateRValues(std::vector<range>::iterator main, std::vector<range>& rest) {
+  for(auto it = main; it != rest.begin(); it --) {
+    if(dist(*main, *it) > abs(main->length)) break;
+    
+    if(isSeedValue(*it)) {
+      it->destination = main->destination + (it->first - main->first); 
+      it->length = dist(*it, *main);
+    }
+  }
 
-  };
+  rest.erase(main);
+}
+
+
+std::vector<range> compareRanges(std::vector<range>& seeds, std::vector<range>& rg) {
+  std::vector<range> values;
+  auto addValues = [&values](std::vector<range> v) { for(auto r : v) {
+      values.push_back(r);
+      values.push_back(range{r.first + r.length - 1, -1 * r.length, r.destination});
+    }};
+
+  addValues(seeds); addValues(rg);
+  std::sort(values.begin(), values.end(), [](const auto& a, const auto& b) { return a.first < b.first; } );
+  
+
+  // _____________
+  std::cout << "seeds:";
+  for(auto s : seeds) std::cout<<"("<<s.first<<","<<s.length<<","<<s.destination<<"|";
+  std::cout << "\n";
+  std::cout << "ranges:";
+  for(auto s: rg) std::cout<<"("<<s.first<<","<<s.length<<","<<s.destination<<"|";  std::cout <<endl;
+  std::cout<<"sorted corners:\n";
+  for(auto s : values) std::cout << s.first <<"|" << s.length << "|" << s.destination <<"\n";
+  // _____________
+
+
+  auto start = values.begin(), end = values.end();      // get the first and last occurance of 's' --> it will be the range we want
+  while(start->destination != 0) start ++;
+  while(end->destination != 0) end --;
+
+  for(auto val = start; val != end - 1; val ++) {
+    int destLength = dist(*val, *(val+1)); 
+    int newVal;
+        
+    if(!isSeedValue(*val)) {
+      if(isLeftSited(*val)) annihilateLValues(val, values);
+      else annihilateRValues(val, values);
+    }
+  } 
+ 
+  std::cout << "\nNew seeds:\n";
+  for(auto s: values) std::cout <<"("<<s.first << ", "<<s.length<< "," << s.destination <<  ")";
+
+  return seeds;
+
 }
 
 
@@ -126,8 +142,13 @@ int main(int argc, char** argv) {
   while(input.is_open() && std::getline(input, line)) {
     if(!isNumber(line[0])) continue;
     rangeMap = getAlmanacRanges(input, line);
-    translateRanges(seeds, rangeMap);   
+    seeds = compareRanges(seeds, rangeMap);   
   }
 
+  std::sort(seeds.begin(), seeds.end(), 
+    [](const auto& a, const auto& b) { return a.first < b.first; } );
+  
+
+  std::cout << "result = " << seeds[0].first << "\n";
   return 1;
 }
