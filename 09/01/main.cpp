@@ -2,61 +2,38 @@
 #include <fstream>
 #include <vector> 
 #include <string>
+#include <sstream>
 
 
-std::vector<int> split(std::string str, char separator=' ') {
+std::vector<int> split(const std::string &str, char separator = ' ') {
   std::vector<int> result;
+  std::istringstream iss(str);
+  std::string value;
 
-  int start = 0, end = 1;
-  while(end != str.size()) {
-    if(str[end] == separator) {
-      result.push_back(std::stoi(str.substr(start, end - start)));
-      start = end + 1;
-    }
-    end ++;
-  }
-
-  result.push_back(std::stoi(str.substr(start, end - start)));
+  while(std::getline(iss, value, separator)) result.push_back(std::stoi(value));
   return result;
 }
 
 
-std::vector<int> getDistances(const std::vector<int>& his) {
+int getLastDistance(std::vector<int>& his) {
   std::vector<int> result;
-  for(int i = 0; i < his.size() - 1; i ++) result.push_back(abs(his[i + 1] - his[i]));
-  std::cout << "H - ";
-  for(auto i : result) std::cout << i << " ";
-  std::cout << "\n";
-  return result;
+  for(int i = 0; i < his.size() - 1; i ++) result.push_back(his[i + 1] - his[i]);
+  his = result;
+  return result.back();
 }
 
 
 bool areDistancesEqual(const std::vector<int>& dists) {
-  return (dists.size() == 1) || (dists[dists.size() - 1] == 0 && dists[dists.size() - 1] == 0);
+  if(dists.size() == 1) return true;
+  for(auto dist : dists) if(dist != 0) return false;
+  return true;
 }
 
 
-int sum(const std::vector<int>& arr) {
-  int result = 0;
-  for(auto el : arr) result += el;
-  return result;
-}
-
-
-int getNextValue(const std::vector<int>& history) {
-  auto dists = getDistances(history);
-  std::vector<int> lastValues;
-
-  lastValues.push_back(history[history.size() - 1]);
-  lastValues.push_back(dists[dists.size()-1]);
-  
-  while(!areDistancesEqual(dists)) {
-    dists = getDistances(dists);
-    lastValues.push_back(dists.size() == 2 ? dists[0] : dists[dists.size() - 1]);
-  }
-  
-  for(auto d : lastValues) std::cout << d << " "; std::cout << "\n";
-  return sum(lastValues);
+int getNextValue(std::vector<int> history) {
+  int result = history.back();
+  while(!areDistancesEqual(history)) result += getLastDistance(history);
+  return result + history.back();
 }
 
 
@@ -77,11 +54,7 @@ int main(int argc, char** argv) {
   std::string line;
 
   while(std::getline(input, line)) {
-    auto history = split(line);
-    std::cout << "\nVal: ";
-    for(auto a : history) std::cout << a << " ";
-    std::cout << "\n";
-    result += getNextValue(history);
+    result += getNextValue(split(line));
   }
 
   std::cout << "result =" << result;
