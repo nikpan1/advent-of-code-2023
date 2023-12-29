@@ -4,59 +4,94 @@
 #include <string>
 #include <sstream>
 #include <map>
+#include <algorithm>
 
 std::vector<int> split(const std::string &str, char separator = ' ');
-std::ifstream loadFile(int argc, char** argv);
+std::vector<std::string> loadFile(int argc, char** argv);
 
-struct pos { int x, y; };
-struct loop { pos start; std::vector<pos> path; };
+
+struct pos { 
+  int x, y; 
+  pos operator+(const pos& other) const   { return pos{this->x + other.x, this->y + other.y}; }
+  pos operator-(const pos& other) const   { return pos{this->x - other.x, this->y - other.y}; }
+  bool operator==(const pos& other) const { return this->x == other.x && this->y == other.y;  }
+  bool operator!=(const pos& other) const { return this->x != other.x || this->y != other.y;  }
+};
+
+
+struct loop { 
+  pos start; 
+  std::vector<pos> path;
+  pos current() { return path.back(); }
+  int size() { return path.size(); }
+};
+
+
+std::map<char, std::vector<pos>> tiles = {
+  //pipe  x y       x y
+  {'|', {{0, 1 }, {0, -1} }},
+  {'-', {{1, 0 }, {-1, 0} }},
+  {'L', {{0, -1}, {1, 0 } }},
+  {'J', {{0, -1}, {-1, 0} }},
+  {'7', {{0, 1 }, {-1, 0} }},
+  {'F' ,{{0, 1 }, {1, 0 } }},
+};
 
 pos getStartPos(const std::vector<std::string>& grid) {
   for(int x = 0; x < grid[0].size(); x ++) 
     for(int y = 0; y < grid.size(); y ++)
-      if(grid[y][x] == 'S') return pos{y, x};
+      if(grid[y][x] == 'S') return pos{x, y};                // @todo check if good 
   
   return pos{0, 0};
 }
 
+pos getEndOfPipe(const std::vector<std::string>& grid, pos oldPos, pos newPos) {
+  pos comeFrom = newPos - oldPos;
+  
+  auto it = tiles.find(grid[newPos.y][newPos.x]);
+  auto entry = std::find(it->second.begin(), it->second.end(), comeFrom);
+  int index = 1 - std::distance(it->second.begin(), entry); 
+  
+  return it->second[index];
+} 
 
-/*
- | is a vertical pipe connecting north and south.
-- is a horizontal pipe connecting east and west.
-L is a 90-degree bend connecting north and east.
-J is a 90-degree bend connecting north and west.
-7 is a 90-degree bend connecting south and west.
-F is a 90-degree bend connecting south and east.
-. is ground; there is no pipe in this tile.
-*/
+bool canMove(const std::vector<std::string>& grid, pos oldPos, pos newPos) {
+  auto it = tiles.find(grid[newPos.y][newPos.x]);
+  if(it == tiles.end()) return false;
+  
+  bool result = false;
+  for(auto vec : it->second) result = result || (oldPos == newPos - vec);
+  return result;
+}
 
-std::map<char, std::vector<pos>> tiles = {
-  //pipe  x y       x y
-  {'|', {{1, 0},  {-1, 0} }},
-  {'-', {{0, 1},  {0, -1} }},
-  {'L', {{-1, 0}, {0, 1}  }},
-  {'J', {{-1, 0}, {0, -1} }},
-  {'7', {{0, -1}, {0, 0}  }},
-  {'F' ,{{1, 0},  {0, 1}  }},
-};
+loop findLoop(const std::vector<std::string>& grid, pos start) {
+  loop result{start, {start}};
+  
+  if(canMove(grid, start, )
+  while(result.current() != start) move(grid, result);
+
+  return result;
+}
 
 
 loop getBiggestLoop(const std::vector<std::string>& grid, pos start) {
-  loop result;
-  result.start = start;
+  std::vector<loop> loops;
+
+  for(auto x : tiles) {  // iterate through every possibility
+    loop lp = findLoop(grid, start);
+    loops.push_back(lp);
+  }
+
+  // sort loops by size and return the longest
+  return loops[0];
 }
 
 
 int main(int argc, char** argv) {
-  std::ifstream input = loadFile(argc, argv);  
-  std::string line;
-  
-  std::vector<std::string> grid;
-  while(std::getline(input, line)) grid.push_back(line);
-  
+  auto grid = loadFile(argc, argv);  
   pos startPos = getStartPos(grid);
   loop biggestLoop = getBiggestLoop(grid, startPos); 
-  
+ 
 
   return 0;
 }
@@ -72,7 +107,7 @@ std::vector<int> split(const std::string &str, char separator) {
 }
 
 
-std::ifstream loadFile(int argc, char** argv) {
+std::vector<std::string> loadFile(int argc, char** argv) {
   if(argc != 2) {
     std::cerr << "Wrong amount of arguments.\n";
   }
@@ -82,9 +117,11 @@ std::ifstream loadFile(int argc, char** argv) {
   if(!input.is_open()) {
     std::cerr << "File not opened.\n";
   }
-
-  return input;
+  
+  std::string line;
+  std::vector<std::string> result;
+  
+  while(std::getline(input, line)) result.push_back(line); // check if need to add borders
+  return result;
 }
-
-
 
